@@ -1,5 +1,0 @@
-gradio
-python-docx
-docx2pdf
-psycopg2-binary
-python-dotenv
