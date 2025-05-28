@@ -182,22 +182,24 @@ FOR EACH ROW EXECUTE FUNCTION check_contact_client_coherence();
 
 -- Vue
 CREATE VIEW bon_intervention_view AS
-SELECT 
- bi.id,
- bi.intervenant,
- c.societe,
- ct.nom AS nom_contact,
- ct.mail AS mail_contact,
- bi.duree_inter,
- bi.date_deb,
- bi.date_fin,
- bi.obj_presta,
- bi.contenu_intervention,
- bi.num_mission,
- bi.date_creation
-FROM 
- bon_intervention bi
-JOIN 
- clients c ON bi.client_id = c.id
-JOIN 
- contact ct ON bi.contact_id = ct.id;
+SELECT
+  bi.id,
+  i.intervenant,
+  c.societe,
+  ct.nom AS nom_contact,
+  ct.mail AS mail_contact,
+  bi.duree_inter,
+  bi.date_deb,
+  bi.date_fin,
+  bi.obj_presta,
+  bi.contenu_intervention,
+  bi.num_mission,
+  bi.date_creation
+FROM
+  bon_intervention bi
+JOIN
+  clients c ON bi.client_id = c.id
+JOIN
+  contact ct ON bi.contact_id = ct.id
+JOIN
+  intervenants i ON bi.intervenant_id = i.id;
