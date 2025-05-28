@@ -1,10 +1,10 @@
 import gradio as gr
 import psycopg2
 from docx import Document
-from docx2pdf import convert
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+import win32com.client
 
 load_dotenv()
 
@@ -57,6 +57,15 @@ def get_mail_intervenant(nom_intervenant):
     conn.close()
     return mail
 
+def get_mail_contact(nom_contact):
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("SELECT mail FROM contact WHERE nom = %s", (nom_contact,))
+    mail = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return mail
+
 def add_client(nomclient):
     conn = connect_db()
     cur = conn.cursor()
@@ -88,7 +97,7 @@ def get_bon_intervention():
     return data
 
 def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
-    doc = Document("template_bon-intervention.docx")
+    doc = Document("template_bon-intervention 6.docx")
     for p in doc.paragraphs:
         p.text = p.text.replace("[INTERVENANT]", intervenant)\
                        .replace("[MAIL_INTERVENANT]", mail_intervenant)\
@@ -103,11 +112,16 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
                        .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
     doc_path = f"bon_intervention_{num_mission}.docx"
     doc.save(doc_path)
+
+    # Conversion en PDF avec LibreOffice
     os.system(f"libreoffice --headless --convert-to pdf {doc_path} --outdir .")
     pdf_path = doc_path.replace(".docx", ".pdf")
+
+    # Suppression du fichier Word
     if os.path.exists(doc_path):
         os.remove(doc_path)
 
+    # Insertion en base
     conn = connect_db()
     cur = conn.cursor()
     cur.execute("""
@@ -124,18 +138,31 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
     conn.commit()
     cur.close()
     conn.close()
+
     return pdf_path
 
+def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path):
+    outlook = win32com.client.Dispatch("Outlook.Application")
+    mail = outlook.CreateItem(0)
+    mail.To = mail_contact
+    mail.CC = mail_intervenant
+    mail.Subject = "Bon d'intervention"
+    mail.Body = "Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\nCordialement."
+    mail.Attachments.Add(os.path.abspath(pdf_path))
+    mail.Display()
+
 def generate_with_mail(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission):
-    mail = get_mail_intervenant(intervenant)
-    return generate_document(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission, mail)
+    mail_intervenant = get_mail_intervenant(intervenant)
+    pdf_path = generate_document(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission, mail_intervenant)
+    mail_contact = get_mail_contact(contact)
+    prepare_outlook_email(mail_contact, mail_intervenant, pdf_path)
+    return pdf_path
 
 def interface():
     clients = get_clients()
     intervenants = get_intervenants()
 
     with gr.Blocks() as demo:
-        # Onglet 1 : Génération de bon d'intervention
         with gr.Tab("Générer Bon d'Intervention"):
             intervenant = gr.Dropdown(label="Intervenant", choices=intervenants)
             societe = gr.Dropdown(label="Société", choices=clients)
@@ -156,13 +183,11 @@ def interface():
                 inputs=[intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission],
                 outputs=fichier_pdf)
 
-        # Onglet 2 : Ajouter un client
         with gr.Tab("Ajouter Client"):
             new_client = gr.Textbox(label="Société")
             msg_client = gr.Textbox(label="Message", interactive=False)
             gr.Button("Ajouter Client").click(add_client, inputs=new_client, outputs=msg_client)
 
-        # Onglet 3 : Ajouter un contact
         with gr.Tab("Ajouter Contact"):
             societe_contact = gr.Dropdown(label="Société", choices=clients)
             nom = gr.Textbox(label="Nom")
@@ -173,7 +198,6 @@ def interface():
             gr.Button("Ajouter Contact").click(add_contact, 
                 inputs=[societe_contact, nom, prenom, mail, tel], outputs=msg_contact)
 
-        # Onglet 4 : Tableau de bord
         with gr.Tab("Tableau de Bord"):
             data = get_bon_intervention()
             gr.DataFrame(data, headers=[
