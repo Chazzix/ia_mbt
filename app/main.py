@@ -48,6 +48,15 @@ def get_intervenants():
     conn.close()
     return intervenants
 
+def add_client(nomclient):
+    conn = connect_db
+    cur = conn.cursor()
+    cur.excute("INSERT INTO clients (societe) VALUES (%s)", (nom_client,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return f"Client '{nom_client}' ajouté avec succès."
+
 def add_contact(societe, nom, prenom, mail, telephone):
     conn = connect_db()
     cur = conn.cursor()
@@ -102,26 +111,52 @@ def interface():
     intervenants = get_intervenants()
 
     with gr.Blocks() as demo:
-        intervenant = gr.Dropdown(label="Intervenant", choices=intervenants)
-        societe = gr.Dropdown(label="Société", choices=clients)
-        contact = gr.Dropdown(label="Contact", choices=[])
-        duree = gr.Textbox(label="Durée")
-        date_deb = gr.Textbox(label="Date début")
-        date_fin = gr.Textbox(label="Date fin")
-        obj = gr.Textbox(label="Objectif")
-        contenu = gr.Textbox(label="Contenu")
-        mission = gr.Textbox(label="Numéro de mission")
-        fichier_pdf = gr.File(label="Bon d'intervention (PDF)")
+        # Onglet 1 : Génération de bon d'intervention
+        with gr.Tab("Générer Bon d'Intervention"):
+            intervenant = gr.Dropdown(label="Intervenant", choices=intervenants)
+            societe = gr.Dropdown(label="Société", choices=clients)
+            contact = gr.Dropdown(label="Contact", choices=[])
+            duree = gr.Textbox(label="Durée")
+            date_deb = gr.Textbox(label="Date début")
+            date_fin = gr.Textbox(label="Date fin")
+            obj = gr.Textbox(label="Objectif")
+            contenu = gr.Textbox(label="Contenu")
+            mission = gr.Textbox(label="Numéro de mission")
+            fichier_pdf = gr.File(label="Bon d'intervention (PDF)")
 
-        def update_contacts(soc):
-            return gr.update(choices=get_contacts(soc))
+            def update_contacts(soc):
+                return gr.update(choices=get_contacts(soc))
 
-        societe.change(update_contacts, inputs=societe, outputs=contact)
+            societe.change(update_contacts, inputs=societe, outputs=contact)
+            gr.Button("Générer PDF").click(generate_document, 
+                inputs=[intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission],
+                outputs=fichier_pdf)
 
-        bouton = gr.Button("Générer PDF")
-        bouton.click(generate_document, inputs=[
-            intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission
-        ], outputs=fichier_pdf)
+        # Onglet 2 : Ajouter un client
+        with gr.Tab("Ajouter Client"):
+            new_client = gr.Textbox(label="Société")
+            msg_client = gr.Textbox(label="Message", interactive=False)
+            gr.Button("Ajouter Client").click(add_client, inputs=new_client, outputs=msg_client)
+
+        # Onglet 3 : Ajouter un contact
+        with gr.Tab("Ajouter Contact"):
+            societe_contact = gr.Dropdown(label="Société", choices=clients)
+            nom = gr.Textbox(label="Nom")
+            prenom = gr.Textbox(label="Prénom")
+            mail = gr.Textbox(label="Email")
+            tel = gr.Textbox(label="Téléphone")
+            msg_contact = gr.Textbox(label="Message", interactive=False)
+            gr.Button("Ajouter Contact").click(add_contact, 
+                inputs=[societe_contact, nom, prenom, mail, tel], outputs=msg_contact)
+
+        # Onglet 4 : Tableau de bord
+        with gr.Tab("Tableau de Bord"):
+            data = get_bon_intervention()
+            gr.DataFrame(data, headers=[
+                "ID", "Intervenant", "Société", "Nom Contact", "Email Contact",
+                "Durée", "Date Début", "Date Fin", "Objectif", "Contenu",
+                "Numéro de Mission", "Date Création"
+            ])
 
     return demo
 
