@@ -58,7 +58,6 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
                        .replace("[OBJ_PRESTA]", obj_presta)\
                        .replace("[CONTENU_INTERVENTION]", contenu_intervention)\
                        .replace("[NUM_MISSION]", num_mission)
-
     doc_path = f"bon_intervention_{num_mission}.docx"
     doc.save(doc_path)
     pdf_path = doc_path.replace(".docx", ".pdf")
@@ -67,22 +66,14 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
     conn = connect_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO bon_intervention (
-            intervenant_id, client_id, contact_id, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission
-        )
-        VALUES (
-            (SELECT id FROM intervenants WHERE intervenant=%s),
-            (SELECT id FROM clients WHERE societe=%s),
-            (SELECT id FROM contact WHERE nom=%s),
-            %s, %s, %s, %s, %s, %s
-        )
+        INSERT INTO bon_intervention (intervenant, client_id, contact_id, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission)
+        VALUES (%s, (SELECT id FROM clients WHERE societe=%s), (SELECT id FROM contact WHERE nom=%s), %s, %s, %s, %s, %s, %s)
     """, (intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission))
     conn.commit()
     cur.close()
     conn.close()
 
     return pdf_path
-
 
 def interface():
     with gr.Blocks() as demo:

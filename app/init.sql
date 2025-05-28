@@ -17,7 +17,7 @@ CREATE TABLE contact (
 -- Création de la table bon_intervention
 CREATE TABLE bon_intervention (
  id SERIAL PRIMARY KEY,
- intervenant_name INTEGER REFERENCES intervenants(intervenant),
+ intervenant_id INTEGER REFERENCES intervenants(id),
  client_id INTEGER REFERENCES clients(id),
  contact_id INTEGER REFERENCES contact(id),
  duree_inter VARCHAR(50),
