@@ -48,10 +48,19 @@ def get_intervenants():
     conn.close()
     return intervenants
 
-def add_client(nomclient):
-    conn = connect_db
+def get_mail_intervenant(nom_intervenant):
+    conn = connect_db()
     cur = conn.cursor()
-    cur.excute("INSERT INTO clients (societe) VALUES (%s)", (nomclient,))
+    cur.execute("SELECT mail FROM intervenants WHERE intervenant = %s", (nom_intervenant,))
+    mail = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return mail
+
+def add_client(nomclient):
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO clients (societe) VALUES (%s)", (nomclient,))
     conn.commit()
     cur.close()
     conn.close()
@@ -78,10 +87,11 @@ def get_bon_intervention():
     conn.close()
     return data
 
-def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission):
+def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
     doc = Document("template_bon-intervention.docx")
     for p in doc.paragraphs:
         p.text = p.text.replace("[INTERVENANT]", intervenant)\
+                       .replace("[MAIL_INTERVENANT]", mail_intervenant)\
                        .replace("[SOCIETE]", societe)\
                        .replace("[NOM_CONTACT]", contact)\
                        .replace("[DUREE_INTER]", duree_inter)\
@@ -89,8 +99,8 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
                        .replace("[DATE_FIN]", date_fin)\
                        .replace("[OBJ_PRESTA]", obj_presta)\
                        .replace("[CONTENU_INTERVENTION]", contenu_intervention)\
-                       .replace("[NUM_MISSION]", num_mission)
-
+                       .replace("[NUM_MISSION]", num_mission)\
+                       .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
     doc_path = f"bon_intervention_{num_mission}.docx"
     doc.save(doc_path)
     pdf_path = doc_path.replace(".docx", ".pdf")
@@ -112,8 +122,11 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
     conn.commit()
     cur.close()
     conn.close()
-
     return pdf_path
+
+def generate_with_mail(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission):
+    mail = get_mail_intervenant(intervenant)
+    return generate_document(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission, mail)
 
 def interface():
     clients = get_clients()
@@ -135,9 +148,9 @@ def interface():
 
             def update_contacts(soc):
                 return gr.update(choices=get_contacts(soc))
-
             societe.change(update_contacts, inputs=societe, outputs=contact)
-            gr.Button("Générer PDF").click(generate_document, 
+
+            gr.Button("Générer PDF").click(generate_with_mail, 
                 inputs=[intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission],
                 outputs=fichier_pdf)
 
