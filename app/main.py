@@ -99,7 +99,6 @@ def interface():
             intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission
         ], outputs=fichier_pdf)
 
-    demo.launch()
-
 if __name__ == "__main__":
-    interface()
+    demo = interface()
+    demo.launch(server_name="0.0.0.0", server_port=7860)
