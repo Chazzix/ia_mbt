@@ -14,21 +14,6 @@ CREATE TABLE contact (
  client_id INTEGER REFERENCES clients(id)
 );
 
--- Création de la table bon_intervention
-CREATE TABLE bon_intervention (
- id SERIAL PRIMARY KEY,
- intervenant_id INTEGER REFERENCES intervenants(id),
- client_id INTEGER REFERENCES clients(id),
- contact_id INTEGER REFERENCES contact(id),
- duree_inter VARCHAR(50),
- date_deb DATE,
- date_fin DATE,
- obj_presta TEXT,
- contenu_intervention TEXT,
- num_mission VARCHAR(50),
- date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Création de la table intervenants
 CREATE TABLE intervenants (
  id SERIAL PRIMARY KEY,
@@ -164,6 +149,21 @@ INSERT INTO intervenants (intervenant, mail)
 VALUES
 ('Mounir BOUGOUFFA', 'mbougouffa@mbt-consulting.com'),
 ('Yannis CHAZOT', 'ychazot@mbt-consulting.com');
+
+-- Création de la table bon_intervention
+CREATE TABLE bon_intervention (
+ id SERIAL PRIMARY KEY,
+ intervenant_id INTEGER REFERENCES intervenants(id),
+ client_id INTEGER REFERENCES clients(id),
+ contact_id INTEGER REFERENCES contact(id),
+ duree_inter VARCHAR(50),
+ date_deb DATE,
+ date_fin DATE,
+ obj_presta TEXT,
+ contenu_intervention TEXT,
+ num_mission VARCHAR(50),
+ date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Trigger de cohérence
 CREATE OR REPLACE FUNCTION check_contact_client_coherence()
