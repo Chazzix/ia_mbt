@@ -69,6 +69,15 @@ def add_contact(societe, nom, prenom, mail, telephone):
     conn.close()
     return f"Contact {nom} ajouté avec succès."
 
+def get_bon_intervention():
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM bon_intervention_view")
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return data
+
 def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission):
     doc = Document("template_bon-intervention.docx")
     for p in doc.paragraphs:
