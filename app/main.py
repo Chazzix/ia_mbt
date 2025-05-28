@@ -14,7 +14,12 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 
 def connect_db():
-    return psycopg2.connect(host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASS)
+    return psycopg2.connect(
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS
+    )
 
 def get_clients():
     conn = connect_db()
@@ -33,6 +38,15 @@ def get_contacts(societe):
     cur.close()
     conn.close()
     return contacts
+
+def get_intervenants():
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("SELECT intervenant FROM intervenants")
+    intervenants = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return intervenants
 
 def add_contact(societe, nom, prenom, mail, telephone):
     conn = connect_db()
@@ -83,11 +97,12 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
 
     return pdf_path
 
-
 def interface():
+    clients = get_clients()
+    intervenants = get_intervenants()
+
     with gr.Blocks() as demo:
-        clients = get_clients()
-        intervenant = gr.Textbox(label="Intervenant")
+        intervenant = gr.Dropdown(label="Intervenant", choices=intervenants)
         societe = gr.Dropdown(label="Société", choices=clients)
         contact = gr.Dropdown(label="Contact", choices=[])
         duree = gr.Textbox(label="Durée")
@@ -107,6 +122,8 @@ def interface():
         bouton.click(generate_document, inputs=[
             intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission
         ], outputs=fichier_pdf)
+
+    return demo
 
 if __name__ == "__main__":
     demo = interface()
