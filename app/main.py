@@ -87,6 +87,7 @@ def interface():
         obj = gr.Textbox(label="Objectif")
         contenu = gr.Textbox(label="Contenu")
         mission = gr.Textbox(label="Numéro de mission")
+        fichier_pdf = gr.File(label="Bon d'intervention (PDF)")
 
         def update_contacts(soc):
             return gr.update(choices=get_contacts(soc))
@@ -96,7 +97,7 @@ def interface():
         bouton = gr.Button("Générer PDF")
         bouton.click(generate_document, inputs=[
             intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission
-        ], outputs="file")
+        ], outputs=fichier_pdf)
 
     demo.launch()
 
