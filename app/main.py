@@ -51,11 +51,11 @@ def get_intervenants():
 def add_client(nomclient):
     conn = connect_db
     cur = conn.cursor()
-    cur.excute("INSERT INTO clients (societe) VALUES (%s)", (nom_client,))
+    cur.excute("INSERT INTO clients (societe) VALUES (%s)", (nomclient,))
     conn.commit()
     cur.close()
     conn.close()
-    return f"Client '{nom_client}' ajouté avec succès."
+    return f"Client '{nomclient}' ajouté avec succès."
 
 def add_contact(societe, nom, prenom, mail, telephone):
     conn = connect_db()
