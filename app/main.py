@@ -103,8 +103,10 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
                        .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
     doc_path = f"bon_intervention_{num_mission}.docx"
     doc.save(doc_path)
+    os.system(f"libreoffice --headless --convert-to pdf {doc_path} --outdir .")
     pdf_path = doc_path.replace(".docx", ".pdf")
-    convert(doc_path, pdf_path)
+    if os.path.exists(doc_path):
+        os.remove(doc_path)
 
     conn = connect_db()
     cur = conn.cursor()
