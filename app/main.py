@@ -136,31 +136,7 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
         for row in table.rows:
             for cell in row.cells:
                 cell.text = replace_placeholders(cell.text, replacements)
-        # p.text = p.text.replace("[INTERVENANT]", intervenant)\
-                    #    .replace("[MAIL_INTERVENANT]", mail_intervenant)\
-                    #    .replace("[SOCIETE]", societe)\
-                    #    .replace("[NOM_CONTACT]", contact)\
-                    #    .replace("[DUREE_INTER]", duree_inter)\
-                    #    .replace("[DATE_DEB]", date_deb)\
-                    #    .replace("[DATE_FIN]", date_fin)\
-                    #    .replace("[OBJ_PRESTA]", obj_presta)\
-                    #    .replace("[CONTENU_INTERVENTION]", contenu_intervention)\
-                    #    .replace("[NUM_MISSION]", num_mission)\
-                    #    .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
-    # for table in doc.tables:
-    #     for row in table.rows:
-    #         for cell in row.cells:
-    #             cell.text = cell.text.replace("[INTERVENANT]", intervenant)\
-    #                                 .replace("[MAIL_INTERVENANT]", mail_intervenant)\
-    #                                 .replace("[SOCIETE]", societe)\
-    #                                 .replace("[NOM_CONTACT]", contact)\
-    #                                 .replace("[DUREE_INTER]", duree_inter)\
-    #                                 .replace("[DATE_DEB]", date_deb)\
-    #                                 .replace("[DATE_FIN]", date_fin)\
-    #                                 .replace("[OBJ_PRESTA]", obj_presta)\
-    #                                 .replace("[CONTENU_INTERVENTION]", contenu_intervention)\
-    #                                 .replace("[NUM_MISSION]", num_mission)\
-    #                                 .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
+                
     doc_path = f"BI_{societe.replace(' ', '_')}.docx"
     doc.save(doc_path)
 
