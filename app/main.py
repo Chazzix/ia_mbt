@@ -4,7 +4,11 @@ from docx import Document
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-import win32com.client
+import sys
+
+if sys.platform == "win32":
+    import win32com.client
+
 
 load_dotenv()
 
