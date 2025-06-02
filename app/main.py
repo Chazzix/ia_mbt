@@ -109,25 +109,63 @@ def get_bon_intervention():
     conn.close()
     return data
 
+def replace_placeholders(text, replacements):
+    for key, value in replacements.items():
+        text = text.replace(key, value)
+    return text
+
 def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
     doc = Document("template_bon-intervention.docx")
+    replacements = {
+        "[INTERVENANT]": intervenant,
+        "[MAIL_INTERVENANT]": mail_intervenant,
+        "[SOCIETE]": societe,
+        "[NOM_CONTACT]": contact,
+        "[DUREE_INTER]": duree_inter,
+        "[DATE_DEB]": date_deb,
+        "[DATE_FIN]": date_fin,
+        "[OBJ_PRESTA]": obj_presta,
+        "[CONTENU_INTERVENTION]": contenu_intervention,
+        "[NUM_MISSION]": num_mission,
+        "[DATE]": datetime.today().strftime("%d/%m/%Y")
+    }
     for p in doc.paragraphs:
-        p.text = p.text.replace("[INTERVENANT]", intervenant)\
-                       .replace("[MAIL_INTERVENANT]", mail_intervenant)\
-                       .replace("[SOCIETE]", societe)\
-                       .replace("[NOM_CONTACT]", contact)\
-                       .replace("[DUREE_INTER]", duree_inter)\
-                       .replace("[DATE_DEB]", date_deb)\
-                       .replace("[DATE_FIN]", date_fin)\
-                       .replace("[OBJ_PRESTA]", obj_presta)\
-                       .replace("[CONTENU_INTERVENTION]", contenu_intervention)\
-                       .replace("[NUM_MISSION]", num_mission)\
-                       .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
-    doc_path = f"bon_intervention_{num_mission}.docx"
+        p.text = replace_placeholders(p.text, replacements)
+
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                cell.text = replace_placeholders(cell.text, replacements)
+        # p.text = p.text.replace("[INTERVENANT]", intervenant)\
+                    #    .replace("[MAIL_INTERVENANT]", mail_intervenant)\
+                    #    .replace("[SOCIETE]", societe)\
+                    #    .replace("[NOM_CONTACT]", contact)\
+                    #    .replace("[DUREE_INTER]", duree_inter)\
+                    #    .replace("[DATE_DEB]", date_deb)\
+                    #    .replace("[DATE_FIN]", date_fin)\
+                    #    .replace("[OBJ_PRESTA]", obj_presta)\
+                    #    .replace("[CONTENU_INTERVENTION]", contenu_intervention)\
+                    #    .replace("[NUM_MISSION]", num_mission)\
+                    #    .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
+    # for table in doc.tables:
+    #     for row in table.rows:
+    #         for cell in row.cells:
+    #             cell.text = cell.text.replace("[INTERVENANT]", intervenant)\
+    #                                 .replace("[MAIL_INTERVENANT]", mail_intervenant)\
+    #                                 .replace("[SOCIETE]", societe)\
+    #                                 .replace("[NOM_CONTACT]", contact)\
+    #                                 .replace("[DUREE_INTER]", duree_inter)\
+    #                                 .replace("[DATE_DEB]", date_deb)\
+    #                                 .replace("[DATE_FIN]", date_fin)\
+    #                                 .replace("[OBJ_PRESTA]", obj_presta)\
+    #                                 .replace("[CONTENU_INTERVENTION]", contenu_intervention)\
+    #                                 .replace("[NUM_MISSION]", num_mission)\
+    #                                 .replace("[DATE]", datetime.today().strftime("%d/%m/%Y"))
+    doc_path = f"BI_{societe.replace(' ', '_')}.docx"
     doc.save(doc_path)
 
     # Conversion en PDF avec LibreOffice
-    os.system(f"libreoffice --headless --convert-to pdf {doc_path} --outdir .")
+    os.system(f'libreoffice --headless --convert-to pdf "{doc_path}" --outdir .')
     pdf_path = doc_path.replace(".docx", ".pdf")
 
     # Suppression du fichier Word
