@@ -114,7 +114,7 @@ def replace_placeholders(text, replacements):
         text = text.replace(key, value)
     return text
 
-def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
+def generate_document(intervenant, societe, contact, mail_contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
     doc_path = "template_bon-intervention.docx"
     doc = Document(doc_path)
 
@@ -122,6 +122,7 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
         "[INTERVENANT]": intervenant,
         "[MAIL_INTERVENANT]": mail_intervenant,
         "[SOCIETE]": societe,
+        "[MAIL_CONTACT]": mail_contact,
         "[NOM_CONTACT]": contact,
         "[DUREE_INTER]": duree_inter,
         "[DATE_DEB]": date_deb,
