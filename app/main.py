@@ -5,10 +5,8 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import sys
-
-if sys.platform == "win32":
-    import win32com.client
-
+import smtplib
+from email.message import EmailMessage
 
 load_dotenv()
 
@@ -60,6 +58,17 @@ def get_mail_intervenant(nom_intervenant):
     cur.close()
     conn.close()
     return mail
+
+def get_all_intervenant_emails(exclude_email=None):
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("SELECT mail FROM intervenants")
+    mails = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    if exclude_email:
+        mails = [m for m in mails if m != exclude_email]
+    return mails
 
 def get_mail_contact(nom_contact):
     conn = connect_db()
@@ -150,20 +159,37 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
     return pdf_path
 
 def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path):
-    outlook = win32com.client.Dispatch("Outlook.Application")
-    mail = outlook.CreateItem(0)
-    mail.To = mail_contact
-    mail.CC = mail_intervenant
-    mail.Subject = "Bon d'intervention"
-    mail.Body = "Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\nCordialement."
-    mail.Attachments.Add(os.path.abspath(pdf_path))
-    mail.Display()
+    from email.message import EmailMessage
+
+    cc_list = get_all_intervenant_emails(exclude_email=mail_intervenant)
+
+    msg = EmailMessage()
+    msg["Subject"] = f"MBT/{societe} - Bon d'intervention"
+    msg["From"] = mail_intervenant
+    msg["To"] = mail_contact
+    if cc_list:
+        msg["Cc"] = ", ".join(cc_list)
+    msg.set_content("Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\n")
+
+    with open(pdf_path, "rb") as f:
+        file_data = f.read
+        file_name = os.path.basename(pdf_path)
+        msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=file_name)
+    
+    output_dir = "./emails"
+    os.makedirs(output_dir, exist_ok=true)
+    eml_path = os.path.join(output_dir, f"email_{file_name.replace('.pdf', '.eml')}")
+
+    with open(eml_path, "wb") as f:
+        f.write(msg.as_bytes)
+
+    print(f"Fichier .eml généré : {eml_path}")
 
 def generate_with_mail(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission):
     mail_intervenant = get_mail_intervenant(intervenant)
     pdf_path = generate_document(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission, mail_intervenant)
     mail_contact = get_mail_contact(contact)
-    prepare_outlook_email(mail_contact, mail_intervenant, pdf_path)
+    prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe)
     return pdf_path
 
 def interface():
