@@ -115,7 +115,9 @@ def replace_placeholders(text, replacements):
     return text
 
 def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
-    doc = Document("template_bon-intervention.docx")
+    doc_path = "template_bon-intervention.docx"
+    doc = Document(doc_path)
+
     replacements = {
         "[INTERVENANT]": intervenant,
         "[MAIL_INTERVENANT]": mail_intervenant,
@@ -129,26 +131,36 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
         "[NUM_MISSION]": num_mission,
         "[DATE]": datetime.today().strftime("%d/%m/%Y")
     }
-    for p in doc.paragraphs:
-        p.text = replace_placeholders(p.text, replacements)
 
+    # Remplacement dans les paragraphes
+    for p in doc.paragraphs:
+        for run in p.runs:
+            run.text = replace_placeholders(run.text, replacements)
+
+    # Remplacement dans les tableaux
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
-                cell.text = replace_placeholders(cell.text, replacements)
-                
-    doc_path = f"BI_{societe.replace(' ', '_')}.docx"
-    doc.save(doc_path)
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        run.text = replace_placeholders(run.text, replacements)
+
+    # 🔍 Zones non prises en charge par python-docx :
+    # - Zones de texte (formes, SmartArt)
+    # - Images et légendes
+    # Pour cela, envisager l'utilisation de bibliothèques comme `docxtpl` ou `Aspose.Words`.
+
+    output_docx_path = f"BI_{societe.replace(' ', '_')}.docx"
+    doc.save(output_docx_path)
 
     # Conversion en PDF avec LibreOffice
-    os.system(f'libreoffice --headless --convert-to pdf "{doc_path}" --outdir .')
-    pdf_path = doc_path.replace(".docx", ".pdf")
+    os.system(f'libreoffice --headless --convert-to pdf "{output_docx_path}" --outdir .')
 
-    # Suppression du fichier Word
-    if os.path.exists(doc_path):
-        os.remove(doc_path)
+    # Suppression du fichier Word généré
+    if os.path.exists(output_docx_path):
+        os.remove(output_docx_path)
 
-    # Ajoute cette conversion avant l'insertion SQL
+    # Conversion des dates pour la base de données
     date_deb = datetime.strptime(date_deb, "%d/%m/%Y").date()
     date_fin = datetime.strptime(date_fin, "%d/%m/%Y").date()
 
@@ -170,7 +182,7 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
     cur.close()
     conn.close()
 
-    return pdf_path
+    return f"BI_{societe.replace(' ', '_')}.pdf"
 
 def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
     from email.message import EmailMessage
