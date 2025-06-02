@@ -101,7 +101,7 @@ def get_bon_intervention():
     return data
 
 def generate_document(intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
-    doc = Document("template_bon-intervention 6.docx")
+    doc = Document("template_bon-intervention.docx")
     for p in doc.paragraphs:
         p.text = p.text.replace("[INTERVENANT]", intervenant)\
                        .replace("[MAIL_INTERVENANT]", mail_intervenant)\
@@ -124,6 +124,10 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
     # Suppression du fichier Word
     if os.path.exists(doc_path):
         os.remove(doc_path)
+
+    # Ajoute cette conversion avant l'insertion SQL
+    date_deb = datetime.strptime(date_deb, "%d/%m/%Y").date()
+    date_fin = datetime.strptime(date_fin, "%d/%m/%Y").date()
 
     # Insertion en base
     conn = connect_db()
