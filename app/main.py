@@ -158,7 +158,7 @@ def generate_document(intervenant, societe, contact, duree_inter, date_deb, date
 
     return pdf_path
 
-def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path):
+def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
     from email.message import EmailMessage
 
     cc_list = get_all_intervenant_emails(exclude_email=mail_intervenant)
@@ -172,7 +172,7 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path):
     msg.set_content("Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\n")
 
     with open(pdf_path, "rb") as f:
-        file_data = f.read
+        file_data = f.read()
         file_name = os.path.basename(pdf_path)
         msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=file_name)
     
