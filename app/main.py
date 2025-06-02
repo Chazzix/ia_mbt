@@ -177,11 +177,11 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
         msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=file_name)
     
     output_dir = "./emails"
-    os.makedirs(output_dir, exist_ok=true)
+    os.makedirs(output_dir, exist_ok=True)
     eml_path = os.path.join(output_dir, f"email_{file_name.replace('.pdf', '.eml')}")
 
     with open(eml_path, "wb") as f:
-        f.write(msg.as_bytes)
+        f.write(msg.as_bytes())
 
     print(f"Fichier .eml généré : {eml_path}")
 
