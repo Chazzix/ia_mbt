@@ -185,7 +185,6 @@ def interface():
             mission = gr.Textbox(label="Numéro de mission")
             fichier_pdf = gr.File(label="Bon d'intervention (PDF)")
             fichier_eml = gr.File(label="Email prêt à envoyer (.eml)")
-            mail_web = gr.HTML("<a href='https://outlook.office.com/mail/deeplink/compose' target='_blank'>📧 Ouvrir Outlook Web pour envoyer l'email</a>")
 
 
             def update_contacts(soc):
