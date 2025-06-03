@@ -147,13 +147,19 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
         msg["Cc"] = ", ".join(cc_list)
     msg["X-Unsent"] = "1"   # Indique à Outlook que c'est un brouillon
 
-    msg.set_content("Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\n") # Corps du message
+    # Corps du message
+    text_body = "Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\n"
+    msg.set_content(text_body)
 
     # Ajout du PDF
     with open(pdf_path, "rb") as f:
         file_data = f.read()
         file_name = os.path.basename(pdf_path)
-        maintype, subtype = mimetypes.guess_type(file_name)[0].split("/")
+        mime_type, _ = mimetypes.guess_type(file_name)
+        if mime_type:
+            maintype, subtype = mime_type.split("/")
+        else:
+                maintype, subtype = "application", "octet-stream"
         msg.add_attachment(file_data, maintype=maintype, subtype=subtype, filename=file_name)
     
     # Save du fichier EML
@@ -162,7 +168,7 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
     eml_path = os.path.join(output_dir, f"email_{file_name.replace('.pdf', '.eml')}")
 
     with open(eml_path, "wb") as f:
-        f.write(msg.as_bytes())
+        f.write(bytes(msg))
 
     print(f"Fichier .eml généré : {eml_path}")
     return eml_path
@@ -183,9 +189,9 @@ def interface():
             intervenant = gr.Dropdown(label="Intervenant", choices=intervenants)
             societe = gr.Dropdown(label="Société", choices=clients)
             contact = gr.Dropdown(label="Contact", choices=[])
-            duree = gr.Textbox(label="Durée")
-            date_deb = gr.Textbox(label="Date début")
-            date_fin = gr.Textbox(label="Date fin")
+            duree = gr.Textbox(label="Durée (uniquement les chiffres)")
+            date_deb = gr.Textbox(label="Date début (dd/mm/YYYY)")
+            date_fin = gr.Textbox(label="Date fin (dd/mm/YYYY)")
             obj = gr.Textbox(label="Objectif")
             contenu = gr.Textbox(label="Contenu")
             mission = gr.Textbox(label="Numéro de mission")
