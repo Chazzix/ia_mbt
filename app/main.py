@@ -107,12 +107,6 @@ def get_bon_intervention():
     conn.close()
     return data
 
-# def replace_placeholders(text, replacements):
-#     for key, value in replacements.items():
-#         text = text.replace(key, value)
-#     return text
-
-
 def generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission):
     template_path = "template_bon-intervention.docx"
     doc = DocxTemplate(template_path)
@@ -128,7 +122,7 @@ def generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_conta
         "DATE_FIN": date_fin,
         "OBJ_PRESTA": obj_presta,
         "CONTENU_INTERVENTION": contenu_intervention,
-        "NUM_MISSION": num_mission,
+        "NUM_MISSION": num_mission if num_mission.strip() else "PRXXXX-XX",
         "DATE": datetime.today().strftime("%d/%m/%Y")
     }
 
@@ -165,13 +159,14 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
         f.write(msg.as_bytes())
 
     print(f"Fichier .eml généré : {eml_path}")
+    return eml_path
 
 def generate_with_mail(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission):
     mail_intervenant = get_mail_intervenant(intervenant)
     mail_contact = get_mail_contact(contact)
     pdf_path = generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_contact, duree, date_deb, date_fin, obj, contenu, mission)
-    prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe)
-    return pdf_path
+    eml_path = prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe)
+    return pdf_path, eml_path
 
 def interface():
     clients = get_clients()
@@ -189,6 +184,9 @@ def interface():
             contenu = gr.Textbox(label="Contenu")
             mission = gr.Textbox(label="Numéro de mission")
             fichier_pdf = gr.File(label="Bon d'intervention (PDF)")
+            fichier_eml = gr.File(label="Email prêt à envoyer (.eml)")
+            mail_web = gr.HTML("<a href='https://outlook.office.com/mail/deeplink/compose' target='_blank'>📧 Ouvrir Outlook Web pour envoyer l'email</a>")
+
 
             def update_contacts(soc):
                 return gr.update(choices=get_contacts(soc))
@@ -196,7 +194,7 @@ def interface():
 
             gr.Button("Générer PDF").click(generate_with_mail, 
                 inputs=[intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission],
-                outputs=fichier_pdf)
+                outputs=[fichier_pdf, fichier_eml])
 
         with gr.Tab("Ajouter Client"):
             new_client = gr.Textbox(label="Société")
