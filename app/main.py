@@ -1,12 +1,9 @@
 import gradio as gr
 import psycopg2
-# from docx import Document
 from docxtpl import DocxTemplate
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-# import sys
-# import smtplib
 from email.message import EmailMessage
 
 load_dotenv()
@@ -172,7 +169,7 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
 def generate_with_mail(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission):
     mail_intervenant = get_mail_intervenant(intervenant)
     mail_contact = get_mail_contact(contact)
-    pdf_path = generate_docxtpl(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission, mail_intervenant)
+    pdf_path = generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_contact, duree, date_deb, date_fin, obj, contenu, mission)
     prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe)
     return pdf_path
 
