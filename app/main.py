@@ -5,9 +5,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from email.message import EmailMessage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
+import mimetypes
 
 load_dotenv()
 
@@ -141,21 +139,24 @@ def generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_conta
 def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
     cc_list = get_all_intervenant_emails(exclude_email=mail_intervenant)
 
-    msg = MIMEMultipart()
+    msg = EmailMessage()
     msg["Subject"] = f"MBT/{societe} - Bon d'intervention"
     msg["From"] = mail_intervenant
     msg["To"] = mail_contact
     if cc_list:
         msg["Cc"] = ", ".join(cc_list)
-    msg.attach(MIMEText("Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\n"))
+    msg["X-Unsent"] = "1"   # Indique à Outlook que c'est un brouillon
 
+    msg.set_content("Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\n") # Corps du message
+
+    # Ajout du PDF
     with open(pdf_path, "rb") as f:
         file_data = f.read()
         file_name = os.path.basename(pdf_path)
-        attachement = MIMEApplication(file_data, _subtype="pdf")
-        attachement.add_header('Content-Disposition', 'attachement', filename=file_name)
-        msg.attach(attachement)
+        maintype, subtype = mimetypes.guess_type(file_name)[0].split("/")
+        msg.add_attachment(file_data, maintype=maintype, subtype=subtype, filename=file_name)
     
+    # Save du fichier EML
     output_dir = "./emails"
     os.makedirs(output_dir, exist_ok=True)
     eml_path = os.path.join(output_dir, f"email_{file_name.replace('.pdf', '.eml')}")
