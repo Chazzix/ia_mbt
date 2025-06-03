@@ -1,11 +1,12 @@
 import gradio as gr
 import psycopg2
-from docx import Document
+# from docx import Document
+from docxtpl import DocxTemplate
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-import sys
-import smtplib
+# import sys
+# import smtplib
 from email.message import EmailMessage
 
 load_dotenv()
@@ -109,85 +110,41 @@ def get_bon_intervention():
     conn.close()
     return data
 
-def replace_placeholders(text, replacements):
-    for key, value in replacements.items():
-        text = text.replace(key, value)
-    return text
+# def replace_placeholders(text, replacements):
+#     for key, value in replacements.items():
+#         text = text.replace(key, value)
+#     return text
 
-def generate_document(intervenant, societe, contact, mail_contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission, mail_intervenant):
-    doc_path = "template_bon-intervention.docx"
-    doc = Document(doc_path)
 
-    replacements = {
-        "[INTERVENANT]": intervenant,
-        "[MAIL_INTERVENANT]": mail_intervenant,
-        "[SOCIETE]": societe,
-        "[MAIL_CONTACT]": mail_contact,
-        "[NOM_CONTACT]": contact,
-        "[DUREE_INTER]": duree_inter,
-        "[DATE_DEB]": date_deb,
-        "[DATE_FIN]": date_fin,
-        "[OBJ_PRESTA]": obj_presta,
-        "[CONTENU_INTERVENTION]": contenu_intervention,
-        "[NUM_MISSION]": num_mission,
-        "[DATE]": datetime.today().strftime("%d/%m/%Y")
+def generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission):
+    template_path = "template_bon-intervention.docx"
+    doc = DocxTemplate(template_path)
+
+    context = {
+        "INTERVENANT": intervenant,
+        "MAIL_INTERVENANT": mail_intervenant,
+        "SOCIETE": societe,
+        "NOM_CONTACT": contact,
+        "MAIL_CONTACT": mail_contact,
+        "DUREE_INTER": duree_inter,
+        "DATE_DEB": date_deb,
+        "DATE_FIN": date_fin,
+        "OBJ_PRESTA": obj_presta,
+        "CONTENU_INTERVENTION": contenu_intervention,
+        "NUM_MISSION": num_mission,
+        "DATE": datetime.today().strftime("%d/%m/%Y")
     }
 
-    # Remplacement dans les paragraphes
-    for p in doc.paragraphs:
-        for run in p.runs:
-            run.text = replace_placeholders(run.text, replacements)
+    output_docx = f"BI_{societe.replace(' ', '_')}.docx"
+    doc.render(context)
+    doc.save(output_docx)
 
-    # Remplacement dans les tableaux
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    for run in paragraph.runs:
-                        run.text = replace_placeholders(run.text, replacements)
+    os.system(f'libreoffice --headless --convert-to pdf "{output_docx}" --outdir .')
+    os.remove(output_docx)
 
-    # 🔍 Zones non prises en charge par python-docx :
-    # - Zones de texte (formes, SmartArt)
-    # - Images et légendes
-    # Pour cela, envisager l'utilisation de bibliothèques comme `docxtpl` ou `Aspose.Words`.
-
-    output_docx_path = f"BI_{societe.replace(' ', '_')}.docx"
-    doc.save(output_docx_path)
-
-    # Conversion en PDF avec LibreOffice
-    os.system(f'libreoffice --headless --convert-to pdf "{output_docx_path}" --outdir .')
-
-    # Suppression du fichier Word généré
-    if os.path.exists(output_docx_path):
-        os.remove(output_docx_path)
-
-    # Conversion des dates pour la base de données
-    date_deb = datetime.strptime(date_deb, "%d/%m/%Y").date()
-    date_fin = datetime.strptime(date_fin, "%d/%m/%Y").date()
-
-    # Insertion en base
-    conn = connect_db()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO bon_intervention (
-            intervenant_id, client_id, contact_id, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission
-        )
-        VALUES (
-            (SELECT id FROM intervenants WHERE intervenant=%s),
-            (SELECT id FROM clients WHERE societe=%s),
-            (SELECT id FROM contact WHERE nom=%s),
-            %s, %s, %s, %s, %s, %s
-        )
-    """, (intervenant, societe, contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return f"BI_{societe.replace(' ', '_')}.pdf"
+    return output_docx.replace(".docx", ".pdf")
 
 def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
-    from email.message import EmailMessage
-
     cc_list = get_all_intervenant_emails(exclude_email=mail_intervenant)
 
     msg = EmailMessage()
@@ -214,8 +171,8 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
 
 def generate_with_mail(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission):
     mail_intervenant = get_mail_intervenant(intervenant)
-    pdf_path = generate_document(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission, mail_intervenant)
     mail_contact = get_mail_contact(contact)
+    pdf_path = generate_docxtpl(intervenant, societe, contact, duree, date_deb, date_fin, obj, contenu, mission, mail_intervenant)
     prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe)
     return pdf_path
 
