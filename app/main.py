@@ -127,11 +127,12 @@ def generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_conta
         "DATE": datetime.today().strftime("%d/%m/%Y")
     }
 
-    output_docx = f"BI_{societe.replace(' ', '_')}.docx"
+    output_dir = "./shared_files"
+    output_docx = f"{output_dir}/BI_{societe.replace(' ', '_')}.docx"
     doc.render(context)
     doc.save(output_docx)
 
-    os.system(f'libreoffice --headless --convert-to pdf "{output_docx}" --outdir .')
+    os.system(f'libreoffice --headless --convert-to pdf "{output_docx}" --outdir {output_dir}')
     os.remove(output_docx)
 
     return output_docx.replace(".docx", ".pdf")
@@ -149,7 +150,17 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
 
     # Corps du message
     text_body = "Bonjour,\n\nVeuillez trouver ci-joint le bon d'intervention.\n\n"
+    html_body = """\
+    <html>
+        <body>
+            <p>Bonjour,<br><br>
+                Veuillez trouver ci-joint le bon d'intervention.<br><br>
+            </p>
+        </body>
+    <html>
+    """
     msg.set_content(text_body)
+    msg.add_attachment(html_body, subtype='html')
 
     # Ajout du PDF
     with open(pdf_path, "rb") as f:
@@ -163,7 +174,7 @@ def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
         msg.add_attachment(file_data, maintype=maintype, subtype=subtype, filename=file_name)
     
     # Save du fichier EML
-    output_dir = "./emails"
+    output_dir = "./shared_files"
     os.makedirs(output_dir, exist_ok=True)
     eml_path = os.path.join(output_dir, f"email_{file_name.replace('.pdf', '.eml')}")
 
