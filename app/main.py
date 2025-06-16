@@ -6,6 +6,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 from email.message import EmailMessage
 import mimetypes
+import requests
+import json
+from msal import ConfidentialClientApplication
 
 load_dotenv()
 
@@ -108,6 +111,27 @@ def get_bon_intervention():
     conn.close()
     return data
 
+def get_graph_token():
+    client_id = os.getenv("MS_CLIENT_ID")
+    client_secret = os.getenv("MS_CLIENT_SECRET")
+    tenant_id = os.getenv("MS_TENANT_ID")
+    scope = [os.getenv("MS_SCOPE")]
+
+    app = ConfidentialClientApplication(
+        client_id,
+        authority=f"https://login.microsoftonline.com/{tenant_id}",
+        client_credential=client_secret
+    )
+
+    result = app.acquire_token_silent(scope, account=None)
+    if not result:
+        result = app.acquire_token_for_client(scopes=scope)
+
+    if "access_token" in result:
+        return result["access_token"]
+    else:
+        raise Exception(f"Erreur d'authentification : {result.get('error_description')}")
+
 def generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_contact, duree_inter, date_deb, date_fin, obj_presta, contenu_intervention, num_mission):
     template_path = "template_bon-intervention.docx"
     doc = DocxTemplate(template_path)
@@ -136,6 +160,44 @@ def generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_conta
     os.remove(output_docx)
 
     return output_docx.replace(".docx", ".pdf")
+
+def check_onedrive_folder_exists(folder_path):
+    access_token = get_graph_token()
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    url = f"https://graph.microsoft.com/v1.0/me/drive/root:/{folder_path}"
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        print(f"📁 Dossier trouvé : {folder_path}")
+        return True
+    elif response.status_code == 404:
+        print(f"⚠️ Dossier introuvable : {folder_path}")
+        return False
+    else:
+        print(f"❌ Erreur lors de la vérification du dossier : {response.status_code} - {response.text}")
+        return False
+
+
+def upload_to_onedrive(file_path, societe):
+    access_token = get_graph_token()
+    file_name = os.path.basename(file_path)
+    folder_path = f"01-Clients/{societe}"
+    upload_url = f"https://graph.microsoft.com/v1.0/me/drive/root:/{folder_path}/{file_name}:/content"
+
+    with open(file_path, "rb") as f:
+        response = requests.put(
+            upload_url,
+            headers={"Authorization": f"Bearer {access_token}"},
+            data=f
+        )
+
+    if response.status_code in [200, 201]:
+        print(f"✅ Fichier uploadé sur OneDrive : {file_name}")
+    else:
+        print(f"❌ Échec de l'upload : {response.status_code} - {response.text}")
 
 def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
     cc_list = get_all_intervenant_emails(exclude_email=mail_intervenant)
@@ -189,6 +251,8 @@ def generate_with_mail(intervenant, societe, contact, duree, date_deb, date_fin,
     mail_contact = get_mail_contact(contact)
     pdf_path = generate_docxtpl(intervenant, mail_intervenant, societe, contact, mail_contact, duree, date_deb, date_fin, obj, contenu, mission)
     eml_path = prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe)
+    upload_to_onedrive(pdf_path, societe)
+    upload_to_onedrive(eml_path, societe)
     return pdf_path, eml_path
 
 def interface():
