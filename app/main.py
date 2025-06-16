@@ -202,7 +202,6 @@ def upload_to_onedrive(file_path, societe):
     else:
         print(f"❌ Échec de l'upload : {response.status_code} - {response.text}")
 
-
 def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
     cc_list = get_all_intervenant_emails(exclude_email=mail_intervenant)
 
