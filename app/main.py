@@ -9,6 +9,7 @@ import mimetypes
 import requests
 import json
 from msal import ConfidentialClientApplication
+from urllib.parse import quote
 
 load_dotenv()
 
@@ -181,7 +182,7 @@ def check_onedrive_folder_exists(folder_path):
         return False
 
 def upload_to_onedrive(file_path, societe):
-    folder_path = f"01-Clients/{societe.replace(' ', '_')}"
+    folder_path = f"01-Clients/{quote(societe)}"
     if not check_onedrive_folder_exists(folder_path):
         print(f"⛔ Upload annulé : dossier {folder_path} non trouvé sur OneDrive.")
         return
