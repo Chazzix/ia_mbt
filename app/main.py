@@ -180,11 +180,14 @@ def check_onedrive_folder_exists(folder_path):
         print(f"❌ Erreur lors de la vérification du dossier : {response.status_code} - {response.text}")
         return False
 
-
 def upload_to_onedrive(file_path, societe):
+    folder_path = f"01-Clients/{societe.replace(' ', '_')}"
+    if not check_onedrive_folder_exists(folder_path):
+        print(f"⛔ Upload annulé : dossier {folder_path} non trouvé sur OneDrive.")
+        return
+
     access_token = get_graph_token()
     file_name = os.path.basename(file_path)
-    folder_path = f"01-Clients/{societe}"
     upload_url = f"https://graph.microsoft.com/v1.0/me/drive/root:/{folder_path}/{file_name}:/content"
 
     with open(file_path, "rb") as f:
@@ -198,6 +201,7 @@ def upload_to_onedrive(file_path, societe):
         print(f"✅ Fichier uploadé sur OneDrive : {file_name}")
     else:
         print(f"❌ Échec de l'upload : {response.status_code} - {response.text}")
+
 
 def prepare_outlook_email(mail_contact, mail_intervenant, pdf_path, societe):
     cc_list = get_all_intervenant_emails(exclude_email=mail_intervenant)
