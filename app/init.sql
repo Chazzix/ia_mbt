@@ -1,6 +1,6 @@
 -- Création de la table clients
 CREATE TABLE clients (
- id INT AUTO_INCREMENT PRIMARY KEY,
+ id SERIAL PRIMARY KEY,
  societe VARCHAR(255) NOT NULL
 );
 
