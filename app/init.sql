@@ -6,18 +6,17 @@ CREATE TABLE clients (
 
 -- Création de la table contact
 CREATE TABLE contact (
- id INT AUTO_INCREMENT PRIMARY KEY,
+ id SERIAL PRIMARY KEY,
  nom VARCHAR(255) NOT NULL,
  prenom VARCHAR(255) NOT NULL,
  mail VARCHAR(255) NOT NULL,
  telephone VARCHAR(20),
-client_id INT,
-FOREIGN KEY (client_id) REFERENCES clients(id)
+ client_id INTEGER REFERENCES clients(id)
 );
 
 -- Création de la table intervenants
 CREATE TABLE intervenants (
- id INT AUTO_INCREMENT PRIMARY KEY,
+ id SERIAL PRIMARY KEY,
  intervenant VARCHAR(255) NOT NULL,
  mail VARCHAR(255) NOT NULL
 );
@@ -153,13 +152,10 @@ VALUES
 
 -- Création de la table bon_intervention
 CREATE TABLE bon_intervention (
- id INT AUTO_INCREMENT PRIMARY KEY,
-intervenant_id INT,
-FOREIGN KEY (intervenant_id) REFERENCES intervenants(id),
-client_id INT,
-FOREIGN KEY (client_id) REFERENCES clients(id),
-contact_id INT,
-FOREIGN KEY (contact_id) REFERENCES contact(id),
+ id SERIAL PRIMARY KEY,
+ intervenant_id INTEGER REFERENCES intervenants(id),
+ client_id INTEGER REFERENCES clients(id),
+ contact_id INTEGER REFERENCES contact(id),
  duree_inter VARCHAR(50),
  date_deb DATE,
  date_fin DATE,
@@ -170,7 +166,19 @@ FOREIGN KEY (contact_id) REFERENCES contact(id),
 );
 
 -- Trigger de cohérence
+CREATE OR REPLACE FUNCTION check_contact_client_coherence()
+RETURNS TRIGGER AS $$
+BEGIN
+ IF (SELECT client_id FROM contact WHERE id = NEW.contact_id) != NEW.client_id THEN
+ RAISE EXCEPTION 'Le contact % n''appartient pas au client %', NEW.contact_id, NEW.client_id;
+ END IF;
+ RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
+CREATE TRIGGER trg_check_contact_client_coherence
+BEFORE INSERT OR UPDATE ON bon_intervention
+FOR EACH ROW EXECUTE FUNCTION check_contact_client_coherence();
 
 -- Vue
 CREATE VIEW bon_intervention_view AS

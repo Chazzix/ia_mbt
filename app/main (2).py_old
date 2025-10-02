@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from email.message import EmailMessage
 import mimetypes
 from urllib.parse import quote
+import time
 
 load_dotenv()
 
@@ -15,13 +16,19 @@ DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 
-def connect_db():
-    return pymysql.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS
-    )
+def connect_db(retries=10, delay=5):
+    for i in range (retries):
+        try:
+            return pymysql.connect(
+                host=DB_HOST,
+                database=DB_NAME,
+                user=DB_USER,
+                password=DB_PASS
+            )
+        except pymysql.err.OperationalError as e:
+            print(f"Tentative {i+1}/{retries} : DB non dispo ({e}), nouvel essai dans {delay}s")
+            time.sleep(delay)
+    raise Exception("Impossible de se connecter à MariaDB après plusieurs tentatives")
 
 def get_clients():
     conn = connect_db()
