@@ -1,6 +1,6 @@
 services:
   db:
-    image: mariadb:10.5
+    image: mariadb:latest
     container_name: mbt_db
     environment:
       MYSQL_ROOT_PASSWORD: MbTC0nsulting!
@@ -14,9 +14,10 @@ services:
     - ./app/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 40s
 
   pgadmin:
     image: elestio/pgadmin:REL-9_3
