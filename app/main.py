@@ -17,7 +17,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 
 def connect_db(retries=10, delay=5):
-    for i in range (retires):
+    for i in range (retries):
         try:
             return pymysql.connect(
                 host=DB_HOST,
