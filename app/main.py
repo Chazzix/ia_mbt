@@ -1,5 +1,5 @@
 import gradio as gr
-import pymysql
+import psycopg2
 from docxtpl import DocxTemplate
 import os
 from datetime import datetime
@@ -16,7 +16,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 
 def connect_db():
-    return pymysql.connect(
+    return psycopg2.connect(
         host=DB_HOST,
         database=DB_NAME,
         user=DB_USER,
