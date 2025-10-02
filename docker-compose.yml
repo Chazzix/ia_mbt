@@ -39,10 +39,10 @@ services:
       - db
   
   glpi:
-    image: diouxx/glpi:latest
+    image: glpi/glpi:latest
     container_name: glpi
     ports:
-      - "8081:80"  # GLPI accessible sur ce port
+      - "8082:80"  # GLPI accessible sur ce port
     environment:
       DB_HOST: db
       DB_USER: admin
