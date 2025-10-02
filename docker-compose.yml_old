@@ -1,22 +1,16 @@
 services:
   db:
-    image: mariadb:10.5
+    image: postgres:bullseye
     container_name: mbt_db
     environment:
-      MYSQL_ROOT_PASSWORD: MbTC0nsulting!
-      MYSQL_DATABASE: mbt_db
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: MbTC0nsulting!
+      POSTGRES_DB: mbt_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: MbTC0nsulting!
     ports:
-    - 3306:3306
+      - "5432:5432"
     volumes:
-    - ./db_data:/var/lib/mysql
-    - ./app/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      - ./db_data:/var/lib/postgresql/data
+      - ./app/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   pgadmin:
     image: elestio/pgadmin:REL-9_3
@@ -42,6 +36,4 @@ services:
       - ./app:/app
       - ./shared_files:/app/emails
     depends_on:
-      db:
-        condition: service_healthy
-
+      - db

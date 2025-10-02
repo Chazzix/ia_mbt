@@ -1,6 +1,6 @@
 gradio
 python-docx
-psycopg2-binary
+pymysql
 python-dotenv
 pywin32 ; sys_platform == 'win32'
 docxtpl
